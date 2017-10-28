@@ -1,0 +1,12 @@
+twitter:
+  consumer_key: XXXXXXXXXX
+  consumer_secret: XXXXXXXXXX
+  access_key: XXXXXXXXXX
+  access_secret: XXXXXXXXXX
+
+relays:
+- mastodon:
+    server: https://mstdn.jp
+    access_token: XXXXXXXXXX
+  twitter:
+    screen_name: twitter
