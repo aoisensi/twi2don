@@ -30,10 +30,7 @@ func main() {
 	httpClient := twiConfig.Client(oauth1.NoContext, twiToken)
 
 	twitterClient := twitter.NewClient(httpClient)
-	stream, err := twitterClient.Streams.User(&twitter.StreamUserParams{
-		With:          "followings",
-		StallWarnings: twitter.Bool(true),
-	})
+
 	for i, relay := range config.Relays {
 		client := mastodon.NewClient(&mastodon.Config{
 			Server:      relay.Mastodon.Server,
@@ -41,14 +38,15 @@ func main() {
 		})
 		config.Relays[i].MastodonClient = client
 	}
-	if err != nil {
-		log.Fatalln(err)
-	}
+
 	demux := twitter.NewSwitchDemux()
 	demux.Tweet = func(tweet *twitter.Tweet) {
 		for _, relay := range config.Relays {
 			if relay.Twitter.ScreenName != tweet.User.ScreenName {
 				continue
+			}
+			if tweet.Retweeted {
+				break
 			}
 			status := &mastodon.Toot{
 				Status: fmt.Sprintf(
@@ -66,6 +64,17 @@ func main() {
 			log.Println(toot.URL)
 			break
 		}
+	}
+
+	if _, _, err := twitterClient.Accounts.VerifyCredentials(nil); err != nil {
+		log.Fatalln(err)
+	}
+
+	stream, err := twitterClient.Streams.User(&twitter.StreamUserParams{
+		With: "followings",
+	})
+	if err != nil {
+		log.Fatalln(err)
 	}
 	for message := range stream.Messages {
 		demux.Handle(message)
